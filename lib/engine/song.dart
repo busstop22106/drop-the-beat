@@ -16,6 +16,24 @@ enum EventType {
   transition,
 }
 
+/// 곡의 한 구간 (인트로·빌드업·드롭 등). 페이즈 코치와
+/// 구간 타임라인이 이 정보를 쓴다.
+enum SectionKind { groove, buildup, drop }
+
+class SongSection {
+  const SongSection({
+    required this.label,
+    required this.startSec,
+    required this.endSec,
+    required this.kind,
+  });
+
+  final String label;
+  final double startSec;
+  final double endSec;
+  final SectionKind kind;
+}
+
 /// 하나의 타이밍 이벤트. [timeSec]는 곡 시작 기준 초.
 class BeatEvent {
   BeatEvent(this.timeSec, this.type);
@@ -42,6 +60,7 @@ class SongMetadata {
     required this.assetPath,
     required this.durationSec,
     required this.events,
+    required this.sections,
   });
 
   final String id;
@@ -59,6 +78,21 @@ class SongMetadata {
 
   /// 시간순 정렬된 타이밍 이벤트 목록.
   final List<BeatEvent> events;
+
+  /// 구간 목록 (시간순).
+  final List<SongSection> sections;
+
+  /// 위치(초)가 속한 구간. 범위 밖이면 처음/마지막 구간을 반환한다.
+  SongSection sectionAt(double positionSec) {
+    for (final section in sections) {
+      if (positionSec >= section.startSec && positionSec < section.endSec) {
+        return section;
+      }
+    }
+    return positionSec < sections.first.startSec
+        ? sections.first
+        : sections.last;
+  }
 
   /// 한 박자 길이 (초).
   double get beatSec => 60.0 / bpm;

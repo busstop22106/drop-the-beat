@@ -17,6 +17,16 @@ class GameState {
   /// 관객 에너지 0~100. 50에서 시작한다.
   double heat = 50.0;
 
+  /// 빌드업 응축도(텐션) 0~100. 필터·루프 롤·FX로 쌓고 드롭에서 소모한다.
+  double tension = 0.0;
+
+  /// 이번 공연에서 번 개런티·팬덤 (무대 배율 적용 후).
+  int cashEarned = 0;
+  int fansEarned = 0;
+
+  /// 텐션을 충분히 모은 채 성공한 드롭 횟수.
+  int ultraDrops = 0;
+
   int combo = 0;
   int maxCombo = 0;
   int score = 0;
@@ -63,7 +73,11 @@ class GameState {
 
   /// 탭 시각([tapSec])에 가장 가까운 미판정 이벤트를 찾아 판정한다.
   /// 판정 창 밖이면 [Judgment.none]을 반환하고 아무것도 바꾸지 않는다.
-  Judgment tap(double tapSec) {
+  Judgment tap(double tapSec) => tapDetailed(tapSec).judgment;
+
+  /// [tap]과 같지만 판정된 이벤트도 함께 반환한다.
+  /// 드롭 이벤트인지 확인해 보상·피버를 걸 때 쓴다.
+  ({Judgment judgment, BeatEvent? event}) tapDetailed(double tapSec) {
     BeatEvent? nearest;
     var nearestDiff = double.infinity;
     for (final event in _events) {
@@ -74,17 +88,60 @@ class GameState {
         nearest = event;
       }
     }
-    if (nearest == null) return Judgment.none;
+    if (nearest == null) return (judgment: Judgment.none, event: null);
     final judgment = judgeTap(nearest.timeSec, tapSec);
-    if (judgment == Judgment.none) return Judgment.none;
+    if (judgment == Judgment.none) {
+      return (judgment: Judgment.none, event: null);
+    }
     _markJudged(nearest, judgment);
-    return judgment;
+    return (judgment: judgment, event: nearest);
   }
 
   /// 시간 경과에 따른 에너지 자연 감소. [dtSec]는 경과 초.
   /// 이벤트가 없을 때도 관객은 서서히 식는다.
   void decay(double dtSec) {
     heat = math.max(0.0, heat - 2.0 * dtSec);
+    tension = math.max(0.0, tension - 2.0 * dtSec);
+  }
+
+  /// 텐션을 쌓는다. 0~100으로 클램프.
+  void addTension(double amount) {
+    tension = (tension + amount).clamp(0.0, 100.0);
+  }
+
+  /// 드롭 탭의 보상. [multiplier]는 무대 개런티 배율.
+  /// 텐션 30 이상이면 ULTRA DROP: 텐션 비례 보너스 + 카운트.
+  /// 텐션이 낮으면 소액 보상만. 어느 쪽이든 텐션은 소모된다.
+  ({int cash, int fans, bool ultra}) applyDropReward(int multiplier) {
+    final ultra = tension >= 30.0;
+    final cash = ultra
+        ? ((80 + tension * 1.5) * multiplier).round()
+        : 25 * multiplier;
+    final fans = ultra
+        ? ((12 + tension * 0.3) * multiplier).round()
+        : 2 * multiplier;
+    cashEarned += cash;
+    fansEarned += fans;
+    if (ultra) ultraDrops++;
+    tension = 0.0;
+    return (cash: cash, fans: fans, ultra: ultra);
+  }
+
+  /// 곡 종료 보너스. 별 개수에 따라 무대 배율을 곱해 지급한다.
+  ({int cash, int fans}) applyFinishBonus(int multiplier) {
+    final cash = switch (stars) {
+      3 => 100 * multiplier,
+      2 => 50 * multiplier,
+      _ => 20 * multiplier,
+    };
+    final fans = switch (stars) {
+      3 => 20 * multiplier,
+      2 => 10 * multiplier,
+      _ => 5 * multiplier,
+    };
+    cashEarned += cash;
+    fansEarned += fans;
+    return (cash: cash, fans: fans);
   }
 
   void _markJudged(BeatEvent event, Judgment judgment) {
@@ -122,6 +179,9 @@ class GameResult {
     required this.missCount,
     required this.accuracy,
     required this.stars,
+    required this.cashEarned,
+    required this.fansEarned,
+    required this.ultraDrops,
   });
 
   factory GameResult.fromState(GameState state) => GameResult(
@@ -132,6 +192,9 @@ class GameResult {
         missCount: state.missCount,
         accuracy: state.accuracy,
         stars: state.stars,
+        cashEarned: state.cashEarned,
+        fansEarned: state.fansEarned,
+        ultraDrops: state.ultraDrops,
       );
 
   final int score;
@@ -141,4 +204,7 @@ class GameResult {
   final int missCount;
   final double accuracy;
   final int stars;
+  final int cashEarned;
+  final int fansEarned;
+  final int ultraDrops;
 }

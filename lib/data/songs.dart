@@ -24,6 +24,20 @@ SongMetadata get prototypeSong => SongMetadata(
       assetPath: 'audio/prototype_drop.mp3',
       durationSec: 67.5,
       events: _buildPrototypeEvents(),
+      sections: const [
+        SongSection(
+            label: '인트로', startSec: 0.0, endSec: 7.5, kind: SectionKind.groove),
+        SongSection(
+            label: '빌드업', startSec: 7.5, endSec: 22.5, kind: SectionKind.buildup),
+        SongSection(
+            label: '드롭 1', startSec: 22.5, endSec: 37.5, kind: SectionKind.drop),
+        SongSection(
+            label: '브레이크', startSec: 37.5, endSec: 45.0, kind: SectionKind.groove),
+        SongSection(
+            label: '드롭 2', startSec: 45.0, endSec: 60.0, kind: SectionKind.drop),
+        SongSection(
+            label: '아웃트로', startSec: 60.0, endSec: 67.5, kind: SectionKind.groove),
+      ],
     );
 
 List<BeatEvent> _buildPrototypeEvents() {
@@ -64,22 +78,3 @@ List<BeatEvent> _buildPrototypeEvents() {
   events.sort((a, b) => a.timeSec.compareTo(b.timeSec));
   return events;
 }
-
-/// 프로토타입 스테이지 1곳 — 동네 지하 술집.
-class StageInfo {
-  const StageInfo({
-    required this.name,
-    required this.description,
-    required this.audience,
-  });
-
-  final String name;
-  final String description;
-  final int audience;
-}
-
-const undergroundBarStage = StageInfo(
-  name: '지하 술집',
-  description: '동네 지하 술집. 관객 20명 앞에서 첫 공연.',
-  audience: 20,
-);

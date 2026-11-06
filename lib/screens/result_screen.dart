@@ -2,20 +2,23 @@ import 'package:flutter/material.dart';
 
 import '../engine/game_state.dart';
 import '../engine/song.dart';
+import '../engine/venue.dart';
 import '../theme/app_theme.dart';
 import 'game_screen.dart';
 
-/// 공연 결과 화면 — 별·점수·판정 집계·관객 리뷰.
+/// 공연 결과 화면 — 별·점수·판정 집계·개런티/팬덤·관객 리뷰.
 class ResultScreen extends StatelessWidget {
   const ResultScreen({
     required this.result,
     required this.song,
+    required this.venue,
     this.calibrationOffsetMs = 0,
     super.key,
   });
 
   final GameResult result;
   final SongMetadata song;
+  final Venue venue;
 
   /// 다시 하기 때 유지할 타이밍 보정값.
   final int calibrationOffsetMs;
@@ -86,7 +89,37 @@ class ResultScreen extends StatelessWidget {
               _statRow('PERFECT', result.perfectCount, AppTheme.neonPink),
               _statRow('GOOD', result.goodCount, AppTheme.neonCyan),
               _statRow('MISS', result.missCount, AppTheme.textMuted),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                      color: Color(venue.themeColorHex).withValues(alpha: 0.5)),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      '💰 개런티 +\$${result.cashEarned}   ·   '
+                      '🔥 팬덤 +${result.fansEarned}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${venue.name} (배율 x${venue.payMultiplier})  ·  '
+                      'ULTRA DROP ${result.ultraDrops}회',
+                      style: const TextStyle(
+                          fontSize: 13, color: AppTheme.textMuted),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -98,13 +131,6 @@ class ResultScreen extends StatelessWidget {
                   style: const TextStyle(fontSize: 15, height: 1.5),
                 ),
               ),
-              const SizedBox(height: 12),
-              Text(
-                '명성 +${result.stars * 10}  ·  다음 스테이지 "홍대 클럽"은 '
-                '프로토타입에서는 아직 잠겨 있어요.',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 13, color: AppTheme.textMuted),
-              ),
               const Spacer(),
               ElevatedButton(
                 onPressed: () {
@@ -112,6 +138,7 @@ class ResultScreen extends StatelessWidget {
                     MaterialPageRoute(
                       builder: (_) => GameScreen(
                         song: song,
+                        venue: venue,
                         calibrationOffsetMs: calibrationOffsetMs,
                       ),
                     ),
@@ -121,7 +148,7 @@ class ResultScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               OutlinedButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () => Navigator.of(context).pop(result),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppTheme.textPrimary,
                   side: const BorderSide(color: AppTheme.surfaceLight),
