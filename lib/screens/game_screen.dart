@@ -162,6 +162,8 @@ class _GameScreenState extends State<GameScreen> {
         DateTime.now().difference(_lastJudgmentAt).inMilliseconds < 450;
     final progress =
         (_positionSec / widget.song.durationSec).clamp(0.0, 1.0);
+    final remainSec =
+        (widget.song.durationSec - _positionSec).clamp(0.0, double.infinity);
     final remain = remainSec.ceil();
     final remainText =
         '${remain ~/ 60}:${(remain % 60).toString().padLeft(2, '0')}';
